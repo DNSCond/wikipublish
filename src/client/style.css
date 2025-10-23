@@ -1,0 +1,19 @@
+html * {
+  font-family: monospace;
+}
+
+textarea {
+  width: 100%;
+}
+
+#errormessage-Favicond[data-state=error] {
+  color: red;
+}
+
+#errormessage-Favicond[data-state=success] {
+  color: green;
+}
+
+#errormessage-Favicond:not(#errormessage-Favicond[data-state]) {
+  display: none;
+}

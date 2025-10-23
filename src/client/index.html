@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <link rel="stylesheet" type="text/css" href="style.css" />
+  <meta charset="UTF-8" />
+  <meta name="viewport"
+    content="initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, width=device-width, height=device-height, user-scalable=0" />
+  <title>Devvit Experimental</title>
+</head>
+
+<body class=app>
+  <div>
+    <h1>Edit Content</h1>
+    <label for=note-body>Body:</label>
+    <div>
+      <textarea id=note-body placeholder="Body" rows=26></textarea>
+    </div>
+    <section>
+      <h2>Publish</h2>
+      <div>
+        <label>wikipage-To: <input id=note-title placeholder=wikipage type=text></label>
+      </div>
+      <button id=subkit>overwrite</button>
+      <div id=errormessage-Favicond></div>
+    </section>
+    <section>
+      <h2>Wikipages</h2>
+      <ul id=wikipageList></ul>
+    </section>
+  </div>
+  <script type="module" src="main.ts" defer></script>
+  <div style=height:32vh></div>
+</body>
+
+</html>
