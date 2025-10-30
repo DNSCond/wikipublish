@@ -17,7 +17,15 @@
     "entry": "index.cjs"
   },
   "menu": {
-    "items": []
+    "items": [
+      {
+        "label": "Create Post",
+        "description": "Create a wikiedit post",
+        "forUserType": "moderator",
+        "location": "subreddit",
+        "endpoint": "/internal/menu/create-post"
+      }
+    ]
   },
   "triggers": {},
   "dev": {

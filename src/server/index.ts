@@ -5,6 +5,7 @@ import {
   getServerPort,
   reddit,
 } from "@devvit/web/server";
+import { createPost } from "./post";
 
 const app = express();
 
@@ -27,7 +28,7 @@ router.get("/api/wikipageList", async (_req, res): Promise<void> => {
       status: "error",
       message: "Failed to Fetch",
       error: String(error),
-       pages: []
+      pages: []
     });
   }
 });
@@ -85,8 +86,16 @@ app.post('/api/wikipost', async (req, res) => {
   }
 });
 
-app.use(router);
+router.post("/internal/menu/create-post", async (req, res) => {
+  //const { subredditName } = req.body; // Ensure you get the subreddit name from the request context
+  //if (!subredditName) {res.status(400).json({ showToast: 'Subreddit name missing.' });return;}
+  const navigateTo = await createPost();
 
+  res.json({ navigateTo });
+});
+
+
+app.use(router);
 const server = createServer(app);
 server.on("error", (err) => console.error(`server error; ${err.stack}`));
 server.listen(getServerPort());
