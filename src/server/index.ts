@@ -86,7 +86,7 @@ app.post('/api/wikipost', async (req, res) => {
   }
 });
 
-router.post("/internal/menu/create-post", async (req, res) => {
+router.post("/internal/menu/create-post", async (_req, res) => {
   //const { subredditName } = req.body; // Ensure you get the subreddit name from the request context
   //if (!subredditName) {res.status(400).json({ showToast: 'Subreddit name missing.' });return;}
   const navigateTo = await createPost();
