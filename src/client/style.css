@@ -18,3 +18,7 @@ textarea {
 #errormessage-Favicond:not(#errormessage-Favicond[data-state]) {
   display: none;
 }
+
+li.wikipageListing {
+  border: 2px solid red;
+}

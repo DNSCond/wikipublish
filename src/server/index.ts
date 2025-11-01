@@ -38,8 +38,9 @@ router.get("/api/wikipageContent", async (req, res): Promise<void> => {
     await isModerayor();
     const wikipageName = req.query.wikipageName as string | undefined;
     if (!wikipageName) throw new RangeError('wikipageName is undefined');
-    const { content } = (await reddit.getWikiPage(context.subredditName, wikipageName));
-    res.json({ content });
+    let { content, revisionDate, revisionAuthor, revisionReason } = (await reddit.getWikiPage(context.subredditName, wikipageName));
+    content = content.replace(/\s+revision by.+$/i, ''); const revisionAuthorname = revisionAuthor?.username || '[undefined]'
+    res.json({ content, revisionDate, revisionAuthorname, revisionReason });
   } catch (error) {
     res.status(400).json({
       status: "error",
@@ -89,11 +90,8 @@ app.post('/api/wikipost', async (req, res) => {
 router.post("/internal/menu/create-post", async (_req, res) => {
   //const { subredditName } = req.body; // Ensure you get the subreddit name from the request context
   //if (!subredditName) {res.status(400).json({ showToast: 'Subreddit name missing.' });return;}
-  const navigateTo = await createPost();
-
-  res.json({ navigateTo });
+  const navigateTo = await createPost(); res.json({ navigateTo });
 });
-
 
 app.use(router);
 const server = createServer(app);
