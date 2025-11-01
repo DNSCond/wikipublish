@@ -22,3 +22,10 @@ textarea {
 li.wikipageListing {
   border: 2px solid red;
 }
+
+pre {
+  margin: 1em 0 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: keep-all;
+}

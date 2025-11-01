@@ -49,7 +49,7 @@ async function wikipageListUpdate() {
           navigateTo(`https://www.reddit.com/r/${subredditName}/wiki/${wikipageName}`);
         }));
       }
-      file.bytesize = innerText.length;
+      file.bytesize = countUTF8Bytes(content);
       file.append(pre); wikipageElement.append(file);
     }
 
@@ -143,3 +143,8 @@ function onButtonClick(button: HTMLButtonElement, callback: (this: HTMLButtonEle
   }, { signal, once });
   return abortController;
 }
+
+function countUTF8Bytes(str: string): number {
+  return (new TextEncoder).encode(str).length;
+}
+
