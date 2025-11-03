@@ -1,36 +1,171 @@
 "use strict"; // FakeFilesUI
-export abstract class FakeFileUIElement extends HTMLElement {
-    // https://github.com/DNSCond/FakeFile
+const {promise, resolve} = Promise.withResolvers<unknown>();
+const colorRegExp = /^#?[a-f0-9]/i;
+
+export class FakeFileUIElement extends HTMLElement {
+    #_onDomInserted = Promise.withResolvers<void>()
+
+    constructor() {
+        super();
+        Promise.all([promise, this.#_onDomInserted]).then(() => this?._whenAllFFElementsDefined());
+    }
+
+    // https://github.com/DNSCond/dnscond.github.io
+    getFullPath(): string[] {
+        let current: HTMLElement | null = this, result = [this.fileName || current.tagName];
+        while ((current = current.parentElement) instanceof FakeFileUIElement) {
+            result.push(current.fileName || current.tagName);
+        }
+        return result.reverse();
+    }
+
+    getPath(): string {
+        return this.getFullPath().join('/');
+    }
+
+    set fileName(value: string | null) {
+        if (value === null) this.removeAttribute('ff-name');
+        else this.setAttribute('ff-name', value);
+    }
+
+    get fileName(): string | null {
+        return this.getAttribute('ff-name');
+    }
+
+    connectedCallback(): void {
+        this.#_onDomInserted.resolve();
+    }
+
+    _whenAllFFElementsDefined(): void {
+    }
+
+    get bytesize(): number {
+        return NaN;
+    }
+
+    get bytesizeFormatted(): string {
+        const {bytesize} = this;
+        if (bytesize > 0)
+            return cbyte(bytesize);
+        return "NaN bytes";
+    }
+
+    /**
+     * returns an invalid date, inherit from it please.
+     */
+    get lastMod(): Date | null {
+        return new Date(NaN);
+    }
+
+    set backgroundColor(color: string | null) {
+        if (color === null) {
+            this.removeAttribute('fakefile-bgcolor');
+        } else if (typeof (color as unknown) === "string" && colorRegExp.test(color)) {
+            color = '#' + color.replace(/^#/, '');
+            this.setAttribute('fakefile-bgcolor', color);
+        } else
+            throw new TypeError('color must be a color in the hex color format');
+    }
+
+    get backgroundColor(): string | null | undefined {
+        const color = this.getAttribute('fakefile-bgcolor');
+        if (color === null) return null; else {
+            if (colorRegExp.test(color)) {
+                return color;
+            } else return undefined;
+        }
+    }
 }
 
 export type changes = { changeName: string, oldValue?: string | null | undefined, newValue: string | null };
+export type HeadersetTSTypes = string | number | boolean | Date | null;
 
-/*
-about types:
-
-the default type is string, so it can be omitted.
-
-write a string like "key1=type1,key2=type2,key3=type3", case-insensitive,
-whitespace ignored "key1 = type1, key2 = type2, key3 = type3".
-
-keys must be entered without the "headerset-*" prefix
-
-- isodatetime: write a isoString, formatted like Date.prototype.toISOString (or whatever you put in if its invalid)
-- date: write a isoString, formatted like Date.prototype.toUTCString
-- time: write a isoString, formatted like Date.prototype.toTimeString
-- bytes: write a number representing bytes, then it formats for humans
-
-*/
+/**
+ * about types:
+ *
+ * the default type is string, so it can be omitted.
+ *
+ * write a string like "key1=type1,key2=type2,key3=type3", case-insensitive,
+ * whitespace ignored "key1 = type1, key2 = type2, key3 = type3".
+ *
+ * keys must be entered without the "headerset-*" prefix
+ *
+ * - isodatetime: write a isoString, formatted like Date.prototype.toISOString (or whatever you put in if its invalid)
+ * - datetime-global: write a isoString, formatted like Date.prototype.toUTCString
+ * - datetime-utc: alias to datetime-global
+ * - datetime-local: write a isoString, formatted like Date.prototype.toString
+ * - date: write a isoString, formatted like Date.prototype.toUTCString
+ * - time: write a isoString, formatted like Date.prototype.toTimeString
+ * - bytes: write a number representing bytes, then it formats for humans
+ *
+ * @param type one of the strings of the above list.
+ * @param string the string to compute with.
+ * @param keepType whether to convert that to a string.
+ * @returns an object with `string` and `type`
+ */
+export function stringtoType(
+    type: string | undefined, string: string | null,
+    keepType: boolean = false): { string: HeadersetTSTypes, type: 'time' | 'string' | null, timeValue?: Date } {
+    if (string === null) return {string: null, type: 'string'};
+    const asIs = {string, type: 'string'} as const;
+    if (type === undefined) return asIs;
+    const timeValue = new Date(string),
+        asTime = {
+            string: timeValue,
+            type: "time",
+            timeValue,
+        } as const;
+    switch (type) {
+        case "isodatetime":
+            if (keepType) return asTime;
+            if (isValidDate(timeValue)) {
+                return {
+                    string: timeValue.toISOString(),
+                    type: "time", timeValue,
+                };
+            } else return asIs;
+        case "datetime-utc":
+        case "datetime-global":
+            if (keepType) return asTime;
+            return {
+                string: timeValue.toUTCString(),
+                type: "time", timeValue,
+            };
+        case "datetime-local":
+            if (keepType) return asTime;
+            return {
+                string: timeValue.toString(),
+                type: "time", timeValue,
+            };
+        case "date":
+            if (keepType) return asTime;
+            return {
+                string: timeValue.toDateString(),
+                type: "time", timeValue,
+            };
+        case "time":
+            if (keepType) return asTime;
+            return {
+                string: timeValue.toTimeString(),
+                type: "time", timeValue,
+            };
+        case "bytes":
+            if (keepType) return {string: +string, type: "string"};
+            return {string: cbyte(+string), type: "string"};
+        default:
+    }
+    return asIs;
+}
 
 export class FakeFileFile extends FakeFileUIElement {
-    #observer?: MutationObserver;
-    #abortController?: AbortController;
+    #observer: MutationObserver = new MutationObserver(change => this.#attributeChangedCallback(change));
     #headerval: Map<string, string> = new Map;
+    #abortController?: AbortController;
+    #backgroundDefault = '#E7F4FD';/*#C9EAFF*/
 
     static get observedAttributes(): string[] {
-        return ['ff-name', 'lastmod', 'open', 'bytesize', 'headerval'];
+        return ['ff-name', 'lastmod', 'open', 'bytesize', 'headerval', 'fakefile-bgcolor'];
     }
-
 
     constructor() {
         super();
@@ -45,10 +180,15 @@ export class FakeFileFile extends FakeFileUIElement {
         div.className = 'content';
         div.append(Object.assign(document.createElement('slot'),
             {innerHTML: '<span style=font-style:italic>empty file</span>'}));
-        details.append(summary, head, div);
+        details.append(summary, head, div);//
+        const bgc = Object.assign(
+            document.createElement('style'), {
+                innerText: `details{background-color:${this.#backgroundDefault}}`,
+                className: "background-color",
+            });
         this.attachShadow({mode: 'open'}).append(Object.assign(document.createElement('style'), {
             innerText: `:host{font-family:monospace}
-            details {
+            details {color:black;/* File */
                 border: solid black 2px;
                 border-right: none;
                 padding: 0.5em;
@@ -61,24 +201,84 @@ export class FakeFileFile extends FakeFileUIElement {
             } dt:after {
                 content: ": ";
             }`.replaceAll(/\s+/g, ' '),
-        }), details);
+        }), bgc, details);
     }
 
+    get backgroundColor() {
+        return super.backgroundColor ?? this.#backgroundDefault;
+    }
 
     connectedCallback(): void {
+        super.connectedCallback();
         this.#abortController?.abort();
         const {signal} = (this.#abortController = new AbortController);
         const metadata = this.shadowRoot?.querySelector('.metadata');
-        this.#observer = new MutationObserver(change => this.#attributeChangedCallback(change));
         this.#observer.observe(this, {attributes: true, attributeOldValue: true});
         (this.shadowRoot!.querySelector('details') as HTMLDetailsElement)!.addEventListener(
             // @ts-ignore
             'toggle', (event: ToggleEvent) => {
                 this.open = (event.newState === 'open')
             }, {signal});
+        {
+            const style = this.shadowRoot!.querySelector('style.background-color')! as HTMLStyleElement;
+            style.innerText = `details{background-color:${this.backgroundColor}}`;
+        }
         if (metadata) {
             metadata.replaceChildren();
             this.updateHeaders();
+        }
+    }
+
+    disconnectedCallback(): void {
+        this.#abortController?.abort();
+        this.#observer?.disconnect();
+    }
+
+    attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null): void {
+        if (this.shadowRoot) {
+            switch (name) {
+                case 'ff-name': {
+                    const summery = this.shadowRoot.querySelector('summary');
+                    if (summery) summery.innerText = `File: "${newValue || this.tagName}"`;
+                    break;
+                }
+                case 'lastmod': {
+                    if (newValue !== null) {
+                        newValue = (new Date(newValue)).toUTCString();
+                        this.#recreateMetaData([{changeName: 'last-modified', oldValue, newValue}]);
+                    }
+                    break;
+                }
+                case 'bytesize': {
+                    if (newValue !== null) {
+                        this.#recreateMetaData([{changeName: 'content-length', oldValue, newValue}]);
+                    }
+                    break;
+                }
+                case 'headerval':
+                    this.#headerval = this.getHeaderValTypes() ?? new Map;
+                    break;
+                case "open": {
+                    const details = this.shadowRoot.querySelector('details');
+                    if (details) {
+                        if (details.open !== (newValue !== null)) {
+                            details.open = newValue !== null;
+                        }
+                    }
+                    break;
+                }
+                case "fakefile-bgcolor": {
+                    const style = this.shadowRoot.querySelector('style.background-color') as HTMLStyleElement | null;
+                    if (style) {
+                        if (newValue && colorRegExp.test(newValue)) {
+                            style.innerText = `details{background-color:${newValue}}`;
+                        } else {
+                            style.innerText = `details{background-color:${this.#backgroundDefault}}`;
+                        }
+                    }
+                }
+                    break;
+            }
         }
     }
 
@@ -124,55 +324,6 @@ export class FakeFileFile extends FakeFileUIElement {
         this.#recreateMetaData(changes);
     }
 
-    disconnectedCallback(): void {
-        this.#abortController?.abort();
-        this.#observer?.disconnect();
-    }
-
-    attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null): void {
-        if (this.shadowRoot) {
-            switch (name) {
-                case 'ff-name': {
-                    const summery = this.shadowRoot.querySelector('summary');
-                    if (summery) summery.innerText = `File: "${newValue || this.tagName}"`;
-                    break;
-                }
-                case 'lastmod': {
-                    if (newValue !== null) {
-                        newValue = (new Date(newValue)).toUTCString();
-                        this.#recreateMetaData([{changeName: 'last-modified', oldValue, newValue}]);
-                    }
-                    break;
-                }
-                case 'headerval': {
-                    const temp = this.#headerval = new Map;
-                    if (newValue !== null) {
-                        newValue = newValue.replaceAll(/\s+/g, '');
-                        const types: {
-                            key: string,
-                            val: string,
-                        }[] = newValue.toLowerCase().split(/,/g)
-                            .map(m => m.split(/=/g))
-                            .map(([key, val]) => ({key, val}));
-                        for (const {key, val} of types) {
-                            temp.set(key, val);
-                        }
-                    }
-                    break;
-                }
-                case "open": {
-                    const details = this.shadowRoot.querySelector('details');
-                    if (details) {
-                        if (details.open !== (newValue !== null)) {
-                            details.open = newValue !== null;
-                        }
-                    }
-                    break;
-                }
-            }
-        }
-    }
-
     #recreateMetaData(changes: changes[]): void {
         if (this.shadowRoot) {
             const metadata = this.shadowRoot.querySelector('.metadata');
@@ -215,7 +366,8 @@ export class FakeFileFile extends FakeFileUIElement {
                         throw new TypeError('InternalError');
                     }
                     if (change.newValue) {
-                        valElement.innerText = this.#normalizeValueString(change.changeName, change.newValue);
+                        const span = this.#normalizeValueString(change.changeName, change.newValue);
+                        valElement.replaceChildren(span);
                         keyElement.innerText = uppercaseAfterHyphen(change.changeName);
                         changesToMake.push(elements[change.changeName]);
                     }
@@ -225,57 +377,44 @@ export class FakeFileFile extends FakeFileUIElement {
         }
     }
 
-    #normalizeValueString(name: string, value: string): string {
+    #normalizeValueString(name: string, value: string): HTMLSpanElement | HTMLTimeElement {
         switch (name) {
-            case "content-length":
-                return cbyte(+value);
-            case "last-modified":
-                return (new Date(value)).toUTCString();
+            case "content-length": {
+                const self = this;
+                return (function (value) {
+                    if (!Number.isFinite(value)) {
+                        const innerText = 'Invalid Number';
+                        return Object.assign(self.ownerDocument.createElement('data'), {innerText, value});
+                    }
+                    const innerText = cbyte(value);
+                    return Object.assign(self.ownerDocument.createElement('data'), {innerText, value});
+                })(+value);
+            }
+            case "last-modified": {
+                const d = new Date(value), dateTime = d.toISOString(), innerText = d.toUTCString();
+                return Object.assign(this.ownerDocument.createElement('time'), {dateTime, innerText});
+            }
         }
         const type = this.#headerval.get(name.toLowerCase().replace(/^headerset-/i, ''));
-        switch (type) {
-            case "date": {
-                const timeValue = new Date(value);
-                return timeValue.toUTCString();
-            }
-            case "time": {
-                const timeValue = new Date(value);
-                return timeValue.toTimeString();
-            }
-            case "isodatetime": {
-                const timeValue = new Date(value);
-                if (isValidDate(timeValue)) {
-                    return timeValue.toISOString();
-                } else return value;
-            }
-            case "bytes":
-                return cbyte(+value);
-            default:
-                return value;
-        }
+        // return stringtoType(type, value).string as string;
+        const result = stringtoType(type, value);
+        let span, innerText = result.string as string, dateTime = result.timeValue?.toISOString();
+        if (result.type === "time")
+            span = Object.assign(this.ownerDocument.createElement('time'), {dateTime, innerText});
+        else span = Object.assign(this.ownerDocument.createElement('span'), {innerText});
+        return span;
     }
 
     set bytesize(value: number | null) {
         if (value === null) {
             this.removeAttribute('bytesize');
-        } else {
-            if (Number.isSafeInteger(value)) {
-                this.setAttribute('bytesize', String(value));
-            } else throw RangeError(`${value} is not a valid bytesize=""`);
-        }
+        } else if (Number.isSafeInteger(value)) {
+            this.setAttribute('bytesize', String(value));
+        } else throw RangeError(`${value} is not a valid bytesize=""`);
     }
 
-    get bytesize(): string | null {
-        return this.getAttribute('ff-name');
-    }
-
-    set fileName(value: string | null) {
-        if (value === null) this.removeAttribute('ff-name');
-        else this.setAttribute('ff-name', value);
-    }
-
-    get fileName(): string | null {
-        return this.getAttribute('ff-name');
+    get bytesize(): number {
+        return +this.getAttribute('bytesize')!;
     }
 
     set open(value: boolean | string) {
@@ -286,8 +425,48 @@ export class FakeFileFile extends FakeFileUIElement {
         }
     }
 
-    get open(): string | null {
-        return this.getAttribute('open');
+    get open(): boolean {
+        return this.hasAttribute('open');
+    }
+
+    set headerVal(value: string | null) {
+        if (value === null) this.removeAttribute('headerVal');
+        else this.setAttribute('headerVal', value);
+    }
+
+    get headerVal(): string | null {
+        return this.getAttribute('headerVal');
+    }
+
+    setHeaderValType(key: string, type: string, overwrite: boolean = false): this {
+        return this.setHeaderValTypes((new Map).set(key, type), overwrite);
+    }
+
+    setHeaderValTypes(values: Map<string, string>, overwrite: boolean = false): this {
+        const result = [], regexp = /^[a-z\-_0-9]+$/i;
+        const array = [...this.#headerval];
+        if (overwrite) array.length = 0;
+        for (const [key, val] of array.concat([...values])) {
+            if (regexp.test(key) || regexp.test(val)) {
+                result.push(`${key}=${val}`);
+            } // else {console.warn('warning setting: key =', key, '; val =', val);}
+        }
+        this.headerVal = result.join();
+        return this;
+    }
+
+    getHeaderValTypes(): Map<string, string> | null {
+        const temporary = this.headerVal?.replaceAll(/\s+/g, '');
+        if (temporary === undefined) return null;
+        const result: Map<string, string> = new Map;
+        const types: { key: string, val: string }[] = temporary
+            .toLowerCase().split(/,/g)
+            .map(m => m.split(/=/g))
+            .map(([key, val]) => ({key, val}));
+        for (const {key, val} of types) {
+            result.set(key, val);
+        }
+        return result;
     }
 
     set lastMod(value: Date | string | number | null) {
@@ -305,31 +484,41 @@ export class FakeFileFile extends FakeFileUIElement {
         return new Date(dt);
     }
 
-    setHeader(name: string, value: string | number | boolean | Date | null): this {
-        name = `headerset-${name}`;
+    setHeader(name: string, value: HeadersetTSTypes): this {
+        name = `${name}`;
+        const headersetName = `headerset-${name}`;
         if (value === null) {
-            this.removeAttribute(name);
+            this.removeAttribute(headersetName);
             return this;
         }
         if (value instanceof Date) {
-            value = value.toUTCString();
+            value = value.toISOString();
+            const overwrite = !this.getHeaderValTypes()?.get(name);
+            if (overwrite) {
+                this.setHeaderValType(name, 'datetime-global');
+            }
         }
-        this.setAttribute(name, `${value}`);
+        this.setAttribute(headersetName, `${value}`);
         return this;
     }
 
-    getHeader(name: string): string | boolean | Date | null {
-        return this.getAttribute(name);
-    }
-
-    setHeaders(keyValues: Record<string, string | null>): this {
+    setHeaders(keyValues: Record<string, HeadersetTSTypes>): this {
         for (const [key, value] of (Object.entries(keyValues))) {
             this.setHeader(camelToKebab(key), value);
         }
         return this;
     }
 
-    getAllHeaders(): Map<string, string | boolean | Date> {
+
+    getHeader(name: string): HeadersetTSTypes {
+        name = `${name}`;
+        const headersetName = `headerset-${name}`;
+        const value = this.getAttribute(headersetName);
+        const type = this.#headerval.get(name)
+        return stringtoType(type, value, true).string;
+    }
+
+    getAllHeaders(): Map<string, HeadersetTSTypes> {
         const constructor = this.constructor as typeof FakeFileFile,
             result: Map<string, string | boolean | Date> = new Map;
         for (const attribute of this.attributes) {
@@ -340,12 +529,16 @@ export class FakeFileFile extends FakeFileUIElement {
         }
         return result;
     }
+
+    _whenAllFFElementsDefined(): void {
+    }
 }
 
 export class FakeFileDirectory extends FakeFileUIElement {
-    #registered: (FakeFileFile | FakeFileDirectory)[] = [];
+    #observer: MutationObserver = new MutationObserver(_change => this.#updateRegistered());
+    #registered: FakeFileUIElement[] = [];
     #abortController?: AbortController;
-    #observer?: MutationObserver;
+    #backgroundDefault = '#FFE8BA';
 
     static get observedAttributes(): string[] {
         return ['ff-name', 'isexpanded'];
@@ -359,9 +552,14 @@ export class FakeFileDirectory extends FakeFileUIElement {
         summary.innerText = 'FakeFileDirectory';
         summary.className = 'summery';
         details.append(summary, list);
+        const bgc = Object.assign(
+            document.createElement('style'), {
+                innerText: `details{background-color:${this.#backgroundDefault}}`,
+                className: "background-color",
+            });
         this.attachShadow({mode: 'open'}).append(Object.assign(document.createElement('style'), {
             innerText: `:host{font-family:monospace}
-            details {
+            details {color:black;/* Directory */
                 border: solid black 2px;
                 border-right: none;
                 padding: 0.5em;
@@ -371,21 +569,27 @@ export class FakeFileDirectory extends FakeFileUIElement {
             list-style-type:none;
             padding-left: 1ch;
             }`.replaceAll(/\s+/g, ' '),
-        }), details);
+        }), bgc, details);
+    }
+
+    get backgroundColor() {
+        return super.backgroundColor ?? this.#backgroundDefault;
     }
 
     connectedCallback() {
+        super.connectedCallback();
         this.#updateRegistered();
-        // watch for child changes
-        this.#observer = new MutationObserver(() => this.#updateRegistered());
         const {signal} = (this.#abortController = new AbortController);
         this.#observer.observe(this, {childList: true});
-        this.#updateRegistered();
         (this.shadowRoot!.querySelector('details') as HTMLDetailsElement)!.addEventListener(
             // @ts-ignore
             'toggle', (event: ToggleEvent) => {
                 this.isexpanded = (event.newState === 'open');
             }, {signal});
+        {
+            const style = this.shadowRoot!.querySelector('style.background-color')! as HTMLStyleElement;
+            style.innerText = `details{background-color:${this.backgroundColor}}`;
+        }
     }
 
     attributeChangedCallback(name: string, _oldValue: string | null, newValue: string | null): void {
@@ -405,6 +609,17 @@ export class FakeFileDirectory extends FakeFileUIElement {
                     }
                     break;
                 }
+                case "fakefile-bgcolor": {
+                    const style = this.shadowRoot.querySelector('style.background-color') as HTMLStyleElement | null;
+                    if (style) {
+                        if (newValue && colorRegExp.test(newValue)) {
+                            style.innerText = `details{background-color:${newValue}}`;
+                        } else {
+                            style.innerText = `details{background-color:${this.#backgroundDefault}}`;
+                        }
+                    }
+                }
+                    break;
             }
         }
     }
@@ -417,7 +632,7 @@ export class FakeFileDirectory extends FakeFileUIElement {
     /**
      * Returns an up-to-date array of immediate child FakeFiles and Directories.
      */
-    get childrenEntries(): (FakeFileFile | FakeFileDirectory)[] {
+    get childrenEntries(): FakeFileUIElement[] {
         return [...this.#registered];
     }
 
@@ -427,13 +642,13 @@ export class FakeFileDirectory extends FakeFileUIElement {
         // .filter((el): el is FakeFileFile | FakeFileDirectory =>
         // el instanceof FakeFileFile || el instanceof FakeFileDirectory);
         const children = (this.#registered = Array.from(this.children, child => {
-            if (child instanceof FakeFileFile || child instanceof FakeFileDirectory) {
+            if (child instanceof FakeFileUIElement) {
                 return child;
             } else {
                 child.removeAttribute('slot');
                 return null;
             }
-        }).filter(m => m !== null) as (FakeFileFile | FakeFileDirectory)[]);
+        }).filter(m => m !== null) as FakeFileUIElement []);
         children.forEach(function (
             each, index) {
             const slotname = `FakeFile-${index++}`;
@@ -456,15 +671,6 @@ export class FakeFileDirectory extends FakeFileUIElement {
         }
     }
 
-    set fileName(value: string | null) {
-        if (value === null) this.removeAttribute('ff-name');
-        else this.setAttribute('ff-name', value);
-    }
-
-    get fileName(): string | null {
-        return this.getAttribute('ff-name');
-    }
-
     set isexpanded(value: boolean | string) {
         if (value || value === '') {
             this.setAttribute('isexpanded', value === true ? '' : value);
@@ -473,18 +679,30 @@ export class FakeFileDirectory extends FakeFileUIElement {
         }
     }
 
-    get isexpanded(): string | null {
-        return this.getAttribute('isexpanded');
+    get isexpanded(): boolean {
+        return this.hasAttribute('isexpanded');
     }
 
     get lastModified(): Date | null {
-        const dates: (string | null)[] = Array.from(this.children, m => m.getAttribute('lastmod'));
-        return findLatestDate(dates.map(m => m ? new Date(m) : null));
+        return findLatestDate(this.childrenEntries.map(m => m.lastMod));
+    }
+
+    get lastMod(): Date | null {
+        return this.lastModified;
+    }
+
+    get bytesize(): number {
+        return this.childrenEntries.map(m => m.bytesize).reduce((prev, curr) => curr + prev, 0);
+    }
+
+    _whenAllFFElementsDefined(): void {
+        this.#updateRegistered();
     }
 }
 
-customElements.define('ff-f', FakeFileFile);
 customElements.define('ff-d', FakeFileDirectory);
+customElements.define('ff-f', FakeFileFile);
+Promise.all([customElements.whenDefined('ff-d'), customElements.whenDefined('ff-f')]).then(resolve);
 
 export function cbyte(bytesize: number): string {
     const units = Array("bytes", "KB", "MB", "GB", "TB");
@@ -543,10 +761,7 @@ export function findFirstDate<T>(array: T[], toDate: (object: T, index: number) 
 
 export function uppercaseAfterHyphen(str: string): string {
     return String(str).split('').map((char, i, arr) => {
-        if (i === 0 || arr[i - 1] === '-') {
-            return char.toUpperCase();
-        }
-        return char;
+        if (i === 0 || arr[i - 1] === '-') return char.toUpperCase(); else return char;
     }).join('');
 }
 
@@ -555,7 +770,5 @@ export function kebabToCamel(str: string): string {
 }
 
 export function camelToKebab(str: string): string {
-    return String(str)
-        .replace(/([A-Z])/g, '-$1')
-        .toLowerCase();
+    return String(str).replace(/([A-Z])/g, '-$1').toLowerCase().replace(/^-+/, '');
 }
