@@ -4,3 +4,9 @@ wikipublish creates a post with a text area that moderators can use to edit the 
 under it are travel buttons and a publish section.
 
 while non mods cannot edit the wiki, they can write on the textbox without changing anything.
+
+## changelog
+
+### 0.0.6
+
+made the file structure look like the wiki structure.

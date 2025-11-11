@@ -1,21 +1,18 @@
-import { createWikipagesStructure } from "./deepseek";
-import { FakeFileDirectory, FakeFileFile } from "./FakeFile";
+import { FakeFileFile } from "./FakeFile";
 import { navigateTo } from "@devvit/web/client";
+
+const wikipageElement = document.querySelector('#wikipageList')!;
 const wikipageListAbort: AbortController[] = [];
-
-// Type for initializeWikipage
-export async function initializeWikipage(ff: HTMLElement): Promise<void> {
-  const fileName = ff.dataset.wikipageName; console.log('fileName', fileName);
-
-  if (ff instanceof FakeFileFile && fileName) {
-    const wikipageData = await getWikipageData(fileName);
-    if (!wikipageData) return;
+async function wikipageListUpdate() {
+  wikipageListAbort.forEach(aborter => aborter.abort());
+  wikipageListAbort.length = 0; wikipageElement.replaceChildren();
+  const wikipageList = (await (await fetch('/api/wikipageList')).json());
+  (wikipageList.pages as string[]).forEach(async fileName => {
     const { revisionDate, content,
       revisionAuthorname, revisionReason
-    } = wikipageData;
-    const lastMod = revisionDate;
+    } = await getWikipageData(fileName), lastMod = revisionDate;
 
-    const file = Object.assign(ff, { lastMod });
+    const file = Object.assign(new FakeFileFile, { fileName, lastMod });
     file.setHeader('revision-Author-name', revisionAuthorname);
     file.setHeader('revision-Reason', revisionReason);
     file.setHeader('revision-Date', revisionDate); {
@@ -36,7 +33,6 @@ export async function initializeWikipage(ff: HTMLElement): Promise<void> {
             if (response.ok) return jsonic;
             else throw jsonic;
           }).then(function (successResp) {
-            noteTitle.value = wikipageName;
             noteBody.value = successResp.content;
           }, function (errorResp) {
             error.dataset.state = 'error';
@@ -54,37 +50,49 @@ export async function initializeWikipage(ff: HTMLElement): Promise<void> {
         }));
       }
       file.bytesize = countUTF8Bytes(content);
-      file.append(pre);
+      file.append(pre); wikipageElement.append(file);
     }
-  }
-}
 
+    // const details = document.createElement('details');
+    // const summary = Object.assign(document.createElement('summary'), { innerText });
+    // const content = document.createElement('div'); details.append(summary, content);
+    // const li = document.createElement('li'); li.append(details); summary.style.padding = '0.5em 0';
+    // const bu = Object.assign(document.createElement('button'), { type: 'button', innerText: 'Load Wikipage' });
+    // const te = Object.assign(document.createElement('button'), { type: 'button', innerText: 'Teleport-To' });
+    // Object.assign(bu.dataset, { wikipageName: innerText }); Object.assign(te.dataset, { wikipageName: innerText });
+    // content.prepend(te, ' ', bu); li.className = 'wikipageListing';
 
-const container = document.getElementById("wikipageList")!;
-
-function buildWikipages(strings: string[]) {
-  container.append(createWikipagesStructure(strings));
-}
-
-fetchWikipageList();
-async function fetchWikipageList() {
-  return fetch('/api/wikipageList').then(resp => resp.json()).then(m => {
-    const directory = document.createElement("ff-f") as FakeFileFile;
-    directory.replaceChildren(...joinArrayWithCallback<string | HTMLBRElement>(m.pages, () => document.createElement('br')));
-    container.replaceChildren(directory); directory.fileName = '/wikipages.txt';
-    return buildWikipages(Array.from(m.pages, m => `${m}`));//.split(/\//g)
-  }, err => {
-    const directory = document.createElement("ff-d") as FakeFileDirectory;
-    directory.isexpanded = true;
-    const content = document.createElement("ff-f");
-    content.setAttribute("ff-name", "Error");
-    content.setAttribute("data-wikipage-name", "Error");
-    directory.append(content); directory.fileName = '/';
-    content.innerText = `${err}`;
-    container.replaceChildren(directory);
+    // wikipageListAbort.push(onButtonClick(bu, function () {
+    //   const wikipageName = this?.dataset?.wikipageName;
+    //   if (wikipageName === undefined) {
+    //     error.dataset.state = 'error';
+    //     error.innerText = 'That page didnt exist, or that subreddit didnt exist';
+    //     return;
+    //   }
+    //   fetch('/api/wikipageContent?' + (new URLSearchParams({ wikipageName }).toString())).then(function (response) {
+    //     const jsonic = response.json();
+    //     if (response.ok) return jsonic;
+    //     else throw jsonic;
+    //   }).then(function (successResp) {
+    //     noteBody.value = successResp.content;
+    //   }, function (errorResp) {
+    //     error.dataset.state = 'error';
+    //     error.innerText = 'Something went wrong, show the developer this: ' + errorResp.error;
+    //   });
+    // }));
+    // wikipageListAbort.push(onButtonClick(te, async function () {
+    //   const wikipageName = this?.dataset?.wikipageName;
+    //   const subredditName = (await (await fetch('/api/currentSubredditName')).json()).currentSubredditName;
+    //   if (subredditName === undefined || wikipageName === undefined) {
+    //     error.dataset.state = 'error';
+    //     error.innerText = 'That page didnt exist, or that subreddit didnt exist';
+    //     return;
+    //   }
+    //   navigateTo(`https://www.reddit.com/r/${subredditName}/wiki/${wikipageName}`);
+    // }));
+    // array.push(li);
   });
-}
-
+} wikipageListUpdate();
 const noteBody = document.querySelector('#note-body')! as HTMLTextAreaElement,
   noteTitle = document.querySelector('#note-title')! as HTMLInputElement,
   error = document.querySelector('#errormessage-Favicond')! as HTMLDivElement;
@@ -93,15 +101,14 @@ noteBody.addEventListener('change', function () {
 }); noteBody.value = localStorage.getItem('autosave') || '';
 
 function getWikipageData(wikipageName: string): Promise<{ content: string, revisionDate: Date, revisionAuthorname: string, revisionReason: string, }> {
-  return Promise.resolve(fetch('/api/wikipageContent?' + (new URLSearchParams({ wikipageName }).toString()))).then(function (response) {
+  return fetch('/api/wikipageContent?' + (new URLSearchParams({ wikipageName }).toString())).then(function (response) {
     const jsonic = response.json();
     if (response.ok) return jsonic;
-    // else return Promise.reject(jsonic);
     else throw jsonic;
   }).then(function (successResp) {
     successResp.revisionDate = new Date(successResp.revisionDate);
     return successResp;
-  }, err => err.then(console.error, console.error));
+  }, console.error);
 }
 
 onButtonClick(document.querySelector('#subkit')!, async function () {
@@ -120,8 +127,7 @@ onButtonClick(document.querySelector('#subkit')!, async function () {
   } else {
     error.dataset.state = 'error';
     error.innerText = 'Something went wrong, show the developer this: ' + jsonic.error;
-  }
-  await fetchWikipageList();
+  } await wikipageListUpdate();
 });
 function onButtonClick(button: HTMLButtonElement, callback: (this: HTMLButtonElement, ev: PointerEvent | KeyboardEvent, which: 'keydown' | 'click') => any, once: boolean = false): AbortController {
   const abortController = new AbortController, { signal } = abortController;
@@ -140,30 +146,5 @@ function onButtonClick(button: HTMLButtonElement, callback: (this: HTMLButtonEle
 
 function countUTF8Bytes(str: string): number {
   return (new TextEncoder).encode(str).length;
-}
-
-// function joinArrayWith<T>(array: T[], joinWith: T): T[] {
-//   array = Array.from(array);
-//   const result = [];
-//   for (let i = 0; i < array.length; i++) {
-//     result.push(array[i]);
-//     if (i < array.length - 1) {
-//       result.push(joinWith);
-//     }
-//   }
-//   return result;
-// }
-
-function joinArrayWithCallback<T>(array: T[], joinWith: (val: T, index: number) => T): T[] {
-  array = Array.from(array);
-  const result = [];
-  for (let i = 0; i < array.length; i++) {
-    const val = array[i];
-    result.push(val);
-    if (i < array.length - 1) {
-      result.push(Reflect.apply(joinWith, result, [val, i]));
-    }
-  }
-  return result;
 }
 
