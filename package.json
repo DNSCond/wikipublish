@@ -16,6 +16,7 @@
     "dev:server": "cd src/server && vite build --watch",
     "login": "devvit login",
     "launch": "npm run deploy && devvit publish",
+    "public-launch": "npm run deploy && devvit publish --public",
     "type-check": "tsc --build"
   },
   "dependencies": {
