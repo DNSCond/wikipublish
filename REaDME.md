@@ -7,6 +7,10 @@ while non mods cannot edit the wiki, they can write on the textbox without chang
 
 ## changelog
 
+### 0.0.7: contentHTML
+
+now shows contentHTML instad of content, that is, now wikipages are formatted, yay
+
 ### 0.0.6
 
 made the file structure look like the wiki structure.
