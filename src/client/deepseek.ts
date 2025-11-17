@@ -1,8 +1,9 @@
-import { initializeWikipage } from "./main";
+import { initializeWikipage, wikipageListAbort_abort } from "./main";
 
 // createWikipagesStructure
 export function createWikipagesStructure(strings: string[]): DocumentFragment {
     const fragment = document.createDocumentFragment();
+    wikipageListAbort_abort();
 
     // Separate strings with and without slashes
     const noSlashStrings: string[] = [];
@@ -49,7 +50,7 @@ export function createWikipagesStructure(strings: string[]): DocumentFragment {
         const folderElement = createFolderStructure(folderName, folderName, subPaths);
         fragment.appendChild(folderElement);
     });
-    
+
     return fragment;
 }
 

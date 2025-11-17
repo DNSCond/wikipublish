@@ -21,8 +21,8 @@ const router = express.Router();
 router.get("/api/wikipageList", async (_req, res): Promise<void> => {
   try {
     await isModerayor();
-    const pages = (await reddit.getWikiPages(context.subredditName)).filter(
-      wikipageName => !wikipageName.startsWith('config/') && wikipageName !== 'config/automoderator');
+    const step = await reddit.getWikiPages(context.subredditName);
+    const pages = step;//.filter(wikipageName => !wikipageName.startsWith('config/') && wikipageName !== 'config/automoderator');
     res.json({ pages });
   } catch (error) {
     res.status(400).json({
@@ -39,9 +39,10 @@ router.get("/api/wikipageContent", async (req, res): Promise<void> => {
     await isModerayor();
     const wikipageName = req.query.wikipageName as string | undefined;
     if (!wikipageName) throw new RangeError('wikipageName is undefined');
-    let { content, revisionDate, revisionAuthor, revisionReason } = (await reddit.getWikiPage(context.subredditName, wikipageName));
-    content = content.replace(/\s*revision by.+$/i, ''); const revisionAuthorname = revisionAuthor?.username || '[undefined]'
-    res.json({ content, revisionDate, revisionAuthorname, revisionReason });
+    let { content, revisionDate, revisionAuthor, revisionReason, contentHtml } = (await reddit.getWikiPage(context.subredditName, wikipageName));
+    content = content.replace(/\s*revision by.+$/i, ''); const revisionAuthorname = revisionAuthor?.username || '[undefined]';
+    const contentHTML = contentHtml;
+    res.json({ content, revisionDate, revisionAuthorname, revisionReason, contentHTML });
   } catch (error) {
     res.status(400).json({
       status: "error",
