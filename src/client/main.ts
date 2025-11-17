@@ -1,7 +1,7 @@
 import { createWikipagesStructure } from "./deepseek";
 import { FakeFileDirectory, FakeFileFile } from "./FakeFile";
 import { navigateTo } from "@devvit/web/client";
-import { HyperLinkGroup, replaceAnchorWith } from "./replaceAnchorWith";
+import { replaceAnchorWith } from "./replaceAnchorWith";
 const wikipageListAbort: AbortController[] = [];
 
 export function wikipageListAbort_abort(thing?: any) {
