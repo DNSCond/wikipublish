@@ -2,6 +2,7 @@ import { createWikipagesStructure } from "./deepseek";
 import { FakeFileDirectory, FakeFileFile } from "./FakeFile";
 import { navigateTo } from "@devvit/web/client";
 import { replaceAnchorWith } from "./replaceAnchorWith";
+import { createDetailsElementWith } from "./details";
 const wikipageListAbort: AbortController[] = [];
 
 export function wikipageListAbort_abort(thing?: any) {
@@ -65,7 +66,8 @@ export async function initializeWikipage(ff: HTMLElement): Promise<void> {
       style += 'sans-serif}pre{margin:1em 0 0;white-space:pre-wrap;overflow-wrap:anywhere;word-break:keep-all;}</style>';
       const html = document.createElement('div');
       html.attachShadow({ mode: 'open' }).innerHTML = style + contentHTML;
-      file.append(te, ' ', bu, document.createElement('div'), html);
+      file.append(te, ' ', bu, createDetailsElementWith('RawText', {}, pre),
+        html);
       {
         const { signal } = myAborter;// todo make a common operation
         Array.from(html.shadowRoot!.querySelectorAll('a'), m => m as HTMLAnchorElement).forEach(a => {
