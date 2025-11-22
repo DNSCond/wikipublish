@@ -20,7 +20,8 @@
     "type-check": "tsc --build"
   },
   "dependencies": {
-    "@devvit/web": "0.12.1",
+    "@devvit/web": "0.12.3",
+    "anthelpers": "^0.1.3",
     "devvit": "^0.12.3",
     "express": "5.1.0"
   },

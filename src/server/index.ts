@@ -6,6 +6,8 @@ import {
   reddit,
 } from "@devvit/web/server";
 import { createPost } from "./post";
+// import { } from "anthelpers";
+import { htmlencode } from "./htmlencode";
 
 const app = express();
 
@@ -20,7 +22,7 @@ const router = express.Router();
 
 router.get("/api/wikipageList", async (_req, res): Promise<void> => {
   try {
-    await isModerayor();
+    // await isModerayor();
     const step = await reddit.getWikiPages(context.subredditName);
     const pages = step;//.filter(wikipageName => !wikipageName.startsWith('config/') && wikipageName !== 'config/automoderator');
     res.json({ pages });
@@ -41,7 +43,7 @@ router.get("/api/wikipageContent", async (req, res): Promise<void> => {
     if (!wikipageName) throw new RangeError('wikipageName is undefined');
     let { content, revisionDate, revisionAuthor, revisionReason, contentHtml } = (await reddit.getWikiPage(context.subredditName, wikipageName));
     content = content.replace(/\s*revision by.+$/i, ''); const revisionAuthorname = revisionAuthor?.username || '[undefined]';
-    const contentHTML = contentHtml;
+    const contentHTML = wikipageName === 'config/automoderator' ? `<pre class=Favicond_antboiy-addition>${htmlencode(content)}</pre>` : contentHtml;
     res.json({ content, revisionDate, revisionAuthorname, revisionReason, contentHTML });
   } catch (error) {
     res.status(400).json({
@@ -92,7 +94,9 @@ app.post('/api/wikipost', async (req, res) => {
 router.post("/internal/menu/create-post", async (_req, res) => {
   //const { subredditName } = req.body; // Ensure you get the subreddit name from the request context
   //if (!subredditName) {res.status(400).json({ showToast: 'Subreddit name missing.' });return;}
-  const navigateTo = await createPost(); res.json({ navigateTo });
+  const navigateTo = await createPost('Please Ignore, The moderators need to edit the wiki');
+  await navigateTo.addComment({ text: 'please ignore this post. it was created due to a nessary workaround due to devvit\'s limitations.' });
+  res.json({ navigateTo });
 });
 
 app.use(router);
