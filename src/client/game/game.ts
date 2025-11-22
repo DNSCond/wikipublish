@@ -71,9 +71,10 @@ export async function initializeWikipage(ff: HTMLElement): Promise<void> {
       console.log(content);
       try {
         const innerText = jsonEncode(JSON.parse(content), 2),
-          pre = Object.assign(document.createElement('pre'), { innerText });
-        file.append(createDetailsElementWith('JsonText', {}, pre));
-        pre.style.borderTop = 'none';
+          pre = Object.assign(document.createElement('pre'), { innerText }),
+          details = createDetailsElementWith('JsonText', {}, pre);
+        file.append(details);
+        details.style.borderTop = 'none';
       } catch { }
       file.append(html);
 

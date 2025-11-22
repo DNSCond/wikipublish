@@ -7,6 +7,8 @@ while non mods cannot edit the wiki, they can write on the textbox without chang
 
 ## changelog
 
+### 0.0.11: bugfix
+
 ### 0.0.10: inline JSON support
 
 - if you have valid json in your wiki then you can view it pretty printed now. not highlighted tho.
