@@ -3,6 +3,7 @@ import { FakeFileDirectory, FakeFileFile } from "./FakeFile";
 import { navigateTo } from "@devvit/web/client";
 import { replaceAnchorWith } from "./replaceAnchorWith";
 import { createDetailsElementWith } from "./details";
+import { jsonEncode } from "anthelpers";
 const wikipageListAbort: AbortController[] = [];
 
 export function wikipageListAbort_abort(thing?: any) {
@@ -66,8 +67,16 @@ export async function initializeWikipage(ff: HTMLElement): Promise<void> {
       style += 'sans-serif}pre{margin:1em 0 0;white-space:pre-wrap;overflow-wrap:anywhere;word-break:keep-all;}</style>';
       const html = document.createElement('div');
       html.attachShadow({ mode: 'open' }).innerHTML = style + contentHTML;
-      file.append(te, ' ', bu, createDetailsElementWith('RawText', {}, pre),
-        html);
+      file.append(te, ' ', bu, createDetailsElementWith('RawText', {}, pre));
+      console.log(content);
+      try {
+        const innerText = jsonEncode(JSON.parse(content), 2),
+          pre = Object.assign(document.createElement('pre'), { innerText });
+        file.append(createDetailsElementWith('JsonText', {}, pre));
+        pre.style.borderTop = 'none';
+      } catch { }
+      file.append(html);
+
       {
         const { signal } = myAborter;// todo make a common operation
         Array.from(html.shadowRoot!.querySelectorAll('a'), m => m as HTMLAnchorElement).forEach(a => {
