@@ -9,7 +9,7 @@
         "entry": "splash.html"
       },
       "game": {
-        "entry": "index.html"
+        "entry": "game.html"
       }
     }
   },

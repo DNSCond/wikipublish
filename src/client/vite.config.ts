@@ -5,7 +5,12 @@ export default defineConfig({
   plugins: [],
   build: {
     outDir: "../../dist/client",
+    emptyOutDir: true,
     rollupOptions: {
+      input: {
+        splash: "splash.html",
+        game: "game.html",
+      },
       output: {
         entryFileNames: "[name].js",
         chunkFileNames: "[name].js",

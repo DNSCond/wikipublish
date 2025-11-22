@@ -1,4 +1,4 @@
-import { initializeWikipage, wikipageListAbort_abort } from "./main";
+import { initializeWikipage, wikipageListAbort_abort } from "./game";
 
 // createWikipagesStructure
 export function createWikipagesStructure(strings: string[]): DocumentFragment {
