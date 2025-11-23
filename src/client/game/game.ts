@@ -58,7 +58,7 @@ export async function initializeWikipage(ff: HTMLElement): Promise<void> {
             error.innerText = 'That page didnt exist, or that subreddit didnt exist';
             return;
           }
-          navigateTo(`https://www.reddit.com/r/${subredditName}/wiki/${wikipageName}`);
+          navigateTo(`https://old.reddit.com/r/${subredditName}/wiki/${wikipageName}`);
         }));
       }
       file.bytesize = countUTF8Bytes(content);
@@ -90,7 +90,7 @@ export async function initializeWikipage(ff: HTMLElement): Promise<void> {
             if (href.startsWith('#')) {
               replaceAnchorWith(a);
             } else {
-              const url = (new URL(href, 'https://www.reddit.com')).toString();
+              const url = (new URL(href, 'https://old.reddit.com')).toString();
               a.dataset.href = url; //a.href = url; 
               a.setAttribute('href', url);
             }

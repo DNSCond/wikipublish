@@ -7,6 +7,10 @@ while non mods cannot edit the wiki, they can write on the textbox without chang
 
 ## changelog
 
+### 0.0.12: old.reddit.com
+
+- changed it so it it directs to old.reddit.com when Teleporting To
+
 ### 0.0.11: bugfix
 
 ### 0.0.10: inline JSON support
