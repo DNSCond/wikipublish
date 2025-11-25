@@ -42,7 +42,8 @@ router.get("/api/wikipageContent", async (req, res): Promise<void> => {
     const wikipageName = req.query.wikipageName as string | undefined;
     if (!wikipageName) throw new RangeError('wikipageName is undefined');
     let { content, revisionDate, revisionAuthor, revisionReason, contentHtml } = (await reddit.getWikiPage(context.subredditName, wikipageName));
-    content = content.replace(/\s*revision by.+$/i, ''); const revisionAuthorname = revisionAuthor?.username || '[undefined]';
+    content = wikipageName === 'config/automoderator' ? content : content.replace(/\s*(?:---\s*)?revision by.+$/i, '');
+    const revisionAuthorname = revisionAuthor?.username || '[undefined]';
     const contentHTML = wikipageName === 'config/automoderator' ? `<pre class=Favicond_antboiy-addition>${htmlencode(content)}</pre>` : contentHtml;
     res.json({ content, revisionDate, revisionAuthorname, revisionReason, contentHTML });
   } catch (error) {
@@ -72,8 +73,8 @@ app.post('/api/wikipost', async (req, res) => {
     const reason = `revision by u/${username} (${Date()})`;
 
     if (typeof wikipageName !== 'string') throw new TypeError('wikipageName msut be a string');
-    if (wikipageName.startsWith('config/')) throw new TypeError('(config/) pages cant be edited');
-    const content = text + '\n\n' + reason, page = wikipageName;
+    if (wikipageName.startsWith('config/') && wikipageName !== 'config/automoderator') throw new TypeError('(config/) pages cant be edited');
+    const content = text + '\n\n---\n\n' + (wikipageName === 'config/automoderator' ? '# ' : '') + reason, page = wikipageName;
     await reddit.updateWikiPage({ content, subredditName, page, reason, });
 
     res.status(200).json({

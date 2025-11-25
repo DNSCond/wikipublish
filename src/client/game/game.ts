@@ -4,6 +4,7 @@ import { navigateTo } from "@devvit/web/client";
 import { replaceAnchorWith } from "./replaceAnchorWith";
 import { createDetailsElementWith } from "./details";
 import { jsonEncode } from "anthelpers";
+import "datetime_global/RelativeTimeChecker";
 const wikipageListAbort: AbortController[] = [];
 
 export function wikipageListAbort_abort(thing?: any) {
@@ -64,11 +65,11 @@ export async function initializeWikipage(ff: HTMLElement): Promise<void> {
       file.bytesize = countUTF8Bytes(content);
 
       let style = '<style>a:visited,a:link{color:blue;}a:hover{color:orangered;}a:active{color:black;}:host{font-family:';
-      style += 'sans-serif}pre{margin:1em 0 0;white-space:pre-wrap;overflow-wrap:anywhere;word-break:keep-all;}</style>';
-      const html = document.createElement('div');
+      style += 'sans-serif}pre{margin:1em 0 0;white-space:pre-wrap;overflow-wrap:anywhere;word-break:keep-all;}';
+      style += 'ul{padding-left:2ch;}</style>';
+      const html = document.createElement('div'); html.setAttribute('style', 'overflow:scroll;');
       html.attachShadow({ mode: 'open' }).innerHTML = style + contentHTML;
       file.append(te, ' ', bu, createDetailsElementWith('RawText', {}, pre));
-      console.log(content);
       try {
         const innerText = jsonEncode(JSON.parse(content), 2),
           pre = Object.assign(document.createElement('pre'), { innerText }),
@@ -90,9 +91,32 @@ export async function initializeWikipage(ff: HTMLElement): Promise<void> {
             if (href.startsWith('#')) {
               replaceAnchorWith(a);
             } else {
-              const url = (new URL(href, 'https://old.reddit.com')).toString();
+              const urlObject = new URL(href, 'https://old.reddit.com'),
+                url = urlObject.toString();
               a.dataset.href = url; //a.href = url; 
               a.setAttribute('href', url);
+              if (urlObject.hostname === 'clock.ant.ractoc.com') {
+                const date = new Date(urlObject.searchParams.get('t') ?? NaN);
+                if (!isNaN(date as unknown as number)) {
+                  const dateTime = date.toISOString(),
+                    replType = urlObject.searchParams.get('type')?.toLocaleLowerCase();
+                  let replacement;
+                  switch (replType) {
+                    case "relative":
+                      replacement = document.createElement("relative-time");
+                      replacement.setAttribute('datetime', dateTime);
+                      break;
+                    default:
+                      replacement = Object.assign(document.createElement("time"), { dateTime });
+                      replacement.setAttribute('data-href', url);
+                      replacement.replaceChildren(...a.childNodes);
+                      if (url === a.innerHTML) {
+                        replacement.innerText = date.toString().slice(34);
+                      }
+                  }
+                  a.replaceWith(replacement);
+                } return;
+              }
             }
           }
           a.dataset.wikipageName = wikipageName;
