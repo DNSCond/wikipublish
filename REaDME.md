@@ -5,6 +5,10 @@ under it are travel buttons and a publish section.
 
 while non mods cannot edit the wiki, they can write on the textbox without changing anything.
 
+## what are "Time URL"s and what is "`clock.ant.ractoc.com`"?
+
+
+
 ## changelog
 
 ### 0.0.12: old.reddit.com

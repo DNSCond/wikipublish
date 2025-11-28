@@ -11,18 +11,24 @@
 
 <body class=app>
   <div>
-    <h1>Edit Content</h1>
-    <label for=note-body>Body:</label>
-    <div>
-      <textarea id=note-body placeholder="Body" rows=26></textarea>
-    </div>
+    <section>
+      <h1>Edit Content</h1>
+      <label for=note-body>Body:</label>
+      <div>
+        <textarea id=note-body placeholder="Body" rows=26></textarea>
+      </div>
+      <label>Datetime-local <input type=datetime-local></label>
+      <output id=datetime-output></output>
+    </section>
     <section>
       <h2>Publish</h2>
       <div>
         <label>wikipage-To: <input id=note-title placeholder=wikipage type=text></label>
       </div>
       <button id=subkit>overwrite</button>
-      <div id=errormessage-Favicond></div>
+      <!-- <div id=errormessage-Favicond></div> -->
+      <ff-d id=errormessage-Reddcond fakefile-bgcolor=#dbffeb ff-name="Errors and Successes">
+      </ff-d>
     </section>
     <section>
       <h2>Wikipages</h2>
