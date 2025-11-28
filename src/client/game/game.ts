@@ -171,7 +171,8 @@ export async function initializeWikipage(ff: HTMLElement): Promise<void> {
                         replacement.replaceChildren(...a.childNodes);
                       }
                   }
-                  replacement.setAttribute('data-href', url);
+                  replacement.setAttribute('data-href', url); if ('timezone' in replacement)
+                    replacement.timezone = Datetime_global.hostLocalTimezone();
                   a.replaceChildren(replacement);
                 } return;
               }

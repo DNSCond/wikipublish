@@ -7,9 +7,14 @@ while non mods cannot edit the wiki, they can write on the textbox without chang
 
 ## what are "Time URL"s and what is "`clock.ant.ractoc.com`"?
 
-
+see [https://github.com/DNSCond/wikipublish/blob/main/WhatAreTimeURLs.md#time-urls](https://github.com/DNSCond/wikipublish/blob/main/WhatAreTimeURLs.md#time-urls)
 
 ## changelog
+
+### 0.0.13: old.reddit.com
+
+- URLs that match the Time URL domain are now converted when present in reddit markdown, making it possible to view times locally.
+- a time url generator is present under the textbox.
 
 ### 0.0.12: old.reddit.com
 
