@@ -7,16 +7,17 @@ textarea {
   width: 100%;
 }
 
-#errormessage-Favicond[data-state=error] {
-  color: red;
+a:visited,
+a:link {
+  color: blue;
 }
 
-#errormessage-Favicond[data-state=success] {
-  color: green;
+a:hover {
+  color: orangered;
 }
 
-#errormessage-Favicond:not(#errormessage-Favicond[data-state]) {
-  display: none;
+a:active {
+  color: black;
 }
 
 li.wikipageListing {

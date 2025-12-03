@@ -5,8 +5,9 @@ import { replaceAnchorWith } from "./replaceAnchorWith";
 import { createDetailsElementWith } from "./details";
 import { jsonEncode } from "anthelpers";
 import { ClockTime, RelativeTime } from "datetime_global/RelativeTimeChecker";
-import { getISOWeek } from "../isoWek";
+import { getISOWeek } from "../isoWeek";
 import { Datetime_global, Datetime_global_constructor } from "datetime_global/Datetime_global";
+import { attachNavigateToAchorTag } from "./attachNavigateToAchorTag";
 const wikipageListAbort: AbortController[] = [];
 
 export function wikipageListAbort_abort(thing?: any) {
@@ -65,8 +66,10 @@ export async function initializeWikipage(ff: HTMLElement): Promise<void> {
 
       let style = '<style>a:visited,a:link{color:blue;}a:hover{color:orangered;}a:active{color:black;}:host{font-family:';
       style += 'sans-serif}pre{margin:1em 0 0;white-space:pre-wrap;overflow-wrap:anywhere;word-break:keep-all;}';
-      style += 'ul{padding-left:2ch;}</style>';
-      const html = document.createElement('div'); html.setAttribute('style', 'overflow:scroll;');
+      style += 'ul{padding-left:2ch;}div.tablediv{overflow:scroll;}</style><style class="reddit table">table{'
+        + `border-collapse:collapse; background-color:white;min-width: 100%;}td,th{border:1px solid #dddddd`
+        + `; text-align:left; padding:8px;} tr:nth-child(even) {background-color:#dddddd;}</style>`;
+      const html = document.createElement('div'); html.setAttribute('style', '/*overflow:scroll;*/');
       html.attachShadow({ mode: 'open' }).innerHTML = style + contentHTML;
       file.append(te, ' ', bu, createDetailsElementWith('RawText', {}, pre));
       try {
@@ -79,7 +82,7 @@ export async function initializeWikipage(ff: HTMLElement): Promise<void> {
       file.append(html);
 
       {
-        const { signal } = myAborter;// todo make a common operation
+        const { signal } = myAborter;
         Array.from(html.shadowRoot!.querySelectorAll('a'), m => m as HTMLAnchorElement).forEach(a => {
           a.addEventListener('click', function (event) {
             event.preventDefault(); wikipageListAbort_abort();
@@ -180,15 +183,44 @@ export async function initializeWikipage(ff: HTMLElement): Promise<void> {
           }
           a.dataset.wikipageName = wikipageName;
         });
+
+        Array.from(html.shadowRoot!.querySelectorAll('table'), table => insertBetween(table, 'div', ['tablediv']));
       }
     }
   }
+}
+
+function insertBetween<RETURN extends Element = HTMLDivElement>(html: HTMLElement, containerTagName: string = 'div', classNames: string[] = []): RETURN {
+  const div: RETURN = document.createElement(containerTagName) as unknown as RETURN; html.replaceWith(div);
+  div.className = 'insertedDiv ' + classNames.join('\x20'); div.append(html); return div;
 }
 
 const container = document.getElementById("wikipageList")!;
 
 function buildWikipages(strings: string[]) {
   container.append(createWikipagesStructure(strings));
+}
+
+function createAccouncement(name: string, nodes: (HTMLElement | string)[], headers: Record<string, string | Date> = {}): FakeFileFile {
+  const file = document.createElement("ff-f") as FakeFileFile;
+  file.fileName = name; file.append(...nodes);
+  file.backgroundColor = '#ffd2d2';
+  file.setHeaders(headers);
+  return file;
+}
+
+function createLink(hrefTo: string | URL, ...innerNodes: (HTMLElement | string)[]) {
+  const anchor = document.createElement('a');
+  anchor.href = `${hrefTo}`; anchor.append(...innerNodes);
+  anchor.className = 'createAnchor createdElement';
+  return attachNavigateToAchorTag(anchor, false);
+}
+
+function createParagraph(...innerNodes: (HTMLElement | string)[]) {
+  const paragraph = document.createElement('p');
+  paragraph.className = 'createParagraph createdElement';
+  paragraph.append(...innerNodes);
+  return paragraph;
 }
 
 fetchWikipageList();
@@ -203,6 +235,16 @@ async function fetchWikipageList() {
     container.replaceChildren(directory);
     directory.fileName = '/wikipages.list';
     directory.backgroundColor = '#ffd2d2';
+
+    container.append(
+      createAccouncement('custom Editors', [
+        createParagraph(
+          'if you want to add a custom editor for your wikipage configuration ',
+          createLink('https://www.reddit.com/message/compose/?to=antboiy&subject=Please%20Add%20My%20Custom%20wikipage%20format%20into%20u%2Fwikipublish',
+            'message u/antboiy with the request').tag, '. im willing to add most schemas as long as its plaintext preferably json, and can be put in wikipages'
+        )], { AccouncementDate: new Date('2025-12-03T17:39:10Z') }),
+    );
+
     return buildWikipages(Array.from(m.pages, m => `${m}`));//.split(/\//g)
   }, err => {
     const directory = document.createElement("ff-d") as FakeFileDirectory;
@@ -226,6 +268,7 @@ function addErrorMessage(success: boolean, message: string | Error): FakeFileFil
   const error = new FakeFileFile, pre = document.createElement('pre'); // @ts-expect-error
   error.fileName = success ? 'Success' : (message?.name ?? 'Error');
   error.append(pre); pre.innerText = `${message}`;
+  errormessage_Reddcond.isexpanded = true;
   errormessage_Reddcond.prepend(error);
   return error;
 }

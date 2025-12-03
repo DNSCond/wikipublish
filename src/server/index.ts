@@ -56,7 +56,7 @@ router.get("/api/wikipageContent", async (req, res): Promise<void> => {
 });
 async function isModerayor() {
   const user = await reddit.getCurrentUser();
-  if (!user) throw new TypeError('currentUser is undefined');
+  if (!user) throw new TypeError('CurrentUser is undefined');
   const username = user.username;
   const isMod = !!(await user.getModPermissionsForSubreddit(context.subredditName)).length;
   if (!isMod) throw new RangeError('CurrentUser isnt a mod');
@@ -66,6 +66,16 @@ async function isModerayor() {
 router.get("/api/currentSubredditName", async (_req, res): Promise<void> => {
   res.status(200).json({ status: "success", currentSubredditName: context.subredditName, });
 });
+
+router.get("/api/isModerator", async (_req, res): Promise<void> => {
+  try { await isModerayor(); } catch (errorObject) {
+    const error = String(errorObject);
+    res.status(400).json({ status: "error", isModerator: false, error });
+    return;
+  }
+  res.status(200).json({ status: "success", isModerator: true, error: null });
+});
+
 app.post('/api/wikipost', async (req, res) => {
   const { text, wikipageName } = JSON.parse(req.body), { subredditName } = context;
   try {
@@ -96,7 +106,10 @@ router.post("/internal/menu/create-post", async (_req, res) => {
   //const { subredditName } = req.body; // Ensure you get the subreddit name from the request context
   //if (!subredditName) {res.status(400).json({ showToast: 'Subreddit name missing.' });return;}
   const navigateTo = await createPost('Please Ignore, The moderators need to edit the wiki');
-  await navigateTo.addComment({ text: 'please ignore this post. it was created due to a nessary workaround due to devvit\'s limitations.' });
+  await navigateTo.addComment({
+    text: 'please ignore this post. it was created due to a nessary workarounddue ' +
+      'to devvit\'s limitations. if i can find a way to not make posts then ill do it'
+  });
   res.json({ navigateTo });
 });
 
