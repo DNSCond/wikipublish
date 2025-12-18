@@ -8,7 +8,7 @@
     ],
     "lib": [
       "DOM",
-      "ES2023",
+      "ES2024",
       "esnext.disposable",
       "dom.iterable",
     ],

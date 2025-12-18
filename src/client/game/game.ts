@@ -8,6 +8,7 @@ import { ClockTime, RelativeTime } from "datetime_global/RelativeTimeChecker";
 import { getISOWeek } from "../isoWeek";
 import { Datetime_global, Datetime_global_constructor } from "datetime_global/Datetime_global";
 import { attachNavigateToAchorTag } from "./attachNavigateToAchorTag";
+import "./imageHandler";
 const wikipageListAbort: AbortController[] = [];
 
 export function wikipageListAbort_abort(thing?: any) {
@@ -201,28 +202,6 @@ function buildWikipages(strings: string[]) {
   container.append(createWikipagesStructure(strings));
 }
 
-function createAccouncement(name: string, nodes: (HTMLElement | string)[], headers: Record<string, string | Date> = {}): FakeFileFile {
-  const file = document.createElement("ff-f") as FakeFileFile;
-  file.fileName = name; file.append(...nodes);
-  file.backgroundColor = '#ffd2d2';
-  file.setHeaders(headers);
-  return file;
-}
-
-function createLink(hrefTo: string | URL, ...innerNodes: (HTMLElement | string)[]) {
-  const anchor = document.createElement('a');
-  anchor.href = `${hrefTo}`; anchor.append(...innerNodes);
-  anchor.className = 'createAnchor createdElement';
-  return attachNavigateToAchorTag(anchor, false);
-}
-
-function createParagraph(...innerNodes: (HTMLElement | string)[]) {
-  const paragraph = document.createElement('p');
-  paragraph.className = 'createParagraph createdElement';
-  paragraph.append(...innerNodes);
-  return paragraph;
-}
-
 fetchWikipageList();
 async function fetchWikipageList() {
   return fetch('/api/wikipageList').then(resp => resp.json()).then(m => {
@@ -236,14 +215,14 @@ async function fetchWikipageList() {
     directory.fileName = '/wikipages.list';
     directory.backgroundColor = '#ffd2d2';
 
-    container.append(
-      createAccouncement('custom Editors', [
-        createParagraph(
-          'if you want to add a custom editor for your wikipage configuration ',
-          createLink('https://www.reddit.com/message/compose/?to=antboiy&subject=Please%20Add%20My%20Custom%20wikipage%20format%20into%20u%2Fwikipublish',
-            'message u/antboiy with the request').tag, '. im willing to add most schemas as long as its plaintext preferably json, and can be put in wikipages'
-        )], { AccouncementDate: new Date('2025-12-03T17:39:10Z') }),
-    );
+    // container.append(
+    //   createAccouncement('custom Editors', [
+    //     createParagraph(
+    //       'if you want to add a custom editor for your wikipage configuration ',
+    //       createLink('https://www.reddit.com/message/compose/?to=antboiy&subject=Please%20Add%20My%20Custom%20wikipage%20format%20into%20u%2Fwikipublish',
+    //         'message u/antboiy with the request').tag, '. im willing to add most schemas as long as its plaintext preferably json, and can be put in wikipages'
+    //     )], { AccouncementDate: new Date('2025-12-03T17:39:10Z') }),
+    // );
 
     return buildWikipages(Array.from(m.pages, m => `${m}`));//.split(/\//g)
   }, err => {

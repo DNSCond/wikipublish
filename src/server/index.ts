@@ -4,10 +4,13 @@ import {
   context,
   getServerPort,
   reddit,
+  media,
+  redis,
 } from "@devvit/web/server";
 import { createPost } from "./post";
 // import { } from "anthelpers";
 import { htmlencode } from "./htmlencode";
+import { CustomError } from "anthelpers";
 
 const app = express();
 
@@ -35,6 +38,67 @@ router.get("/api/wikipageList", async (_req, res): Promise<void> => {
     });
   }
 });
+
+app.post('/api/createImageURL', async (req, res) => {
+  try {
+    const { userId } = context, token = req.body.tokenId;
+    if (!userId) throw new UserNotLoggedInError('the user is not logged in');
+    if (!Number.isSafeInteger(token)) throw new RangeError('Invalid Token Id');
+    const key = `${userId}-expressKey-${token}`, array = await redis.hGetAll(key);
+    // @ts-expect-error
+    array.length = getArrayLengthFromOrdinaryObject(array);
+    const urlArr = Array.prototype.join.call(array);
+    if (urlArr.match(/,,/)) throw new ValiDationError('URL contains empty spots', { urlArr });
+    const url = urlArr.replaceAll(/,/g, ''), { mediaUrl } = (await media.upload({ url, type: 'image' }));
+    res.status(200).json({ mediaUrl, message: "Success!" });
+  } catch (err) {
+    const message = String(err);
+    res.status(400).json({ mediaUrl: null, message });
+  }
+});
+
+app.post('/api/createPartialURL', async (req, res) => {
+  try {
+    const { element, tokenId } = req.body, { userId } = context, token = tokenId;
+    if (!userId) throw new UserNotLoggedInError('the user is not logged in');
+    if (!Number.isSafeInteger(token)) throw new RangeError('Invalid Token Id');
+    const key = `${userId}-expressKey-${token}`, length =
+      getArrayLengthFromOrdinaryObject(await redis.hGetAll(key));
+    await redis.hSet(key, { [length]: element, });
+    await redis.expire(key, 10);
+    res.status(200).json({ mediaUrl: null, message: null });
+  } catch (err) {
+    const message = String(err);
+    res.status(400).json({ mediaUrl: null, message });
+  }
+});
+
+function getArrayLengthFromOrdinaryObject(obj: object): number {
+  let max = -1;
+
+  for (const key of Object.keys(obj)) {
+    // Fast array index check
+    const n = +key;
+    if (
+      Number.isInteger(n) &&
+      n >= 0 &&
+      String(n) === key &&
+      n < 2 ** 32 - 1
+    ) {
+      if (n > max) max = n;
+    }
+  }
+
+  return max + 1;
+}
+
+class UserNotLoggedInError extends CustomError<null> {
+  constructor(message: string) {
+    super(message, null);
+  }
+}
+
+class ValiDationError extends CustomError { }
 
 router.get("/api/wikipageContent", async (req, res): Promise<void> => {
   try {

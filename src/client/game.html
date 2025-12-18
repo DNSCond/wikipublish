@@ -14,25 +14,34 @@
     <section>
       <h1>Edit Content</h1>
       <label for=note-body>Body:</label>
-      <div>
+      <div data-for=body>
         <textarea id=note-body placeholder="Body" rows=26></textarea>
       </div>
-      <label>time url generator: <input type=datetime-local></label>
-      <output id=datetime-output></output>
-    </section>
-    <section>
-      <h2>Publish</h2>
-      <label>wikipage-To: <input id=note-title placeholder=wikipage type=text></label>
-      <button id=subkit>overwrite</button>
-      <!-- <div id=errormessage-Favicond></div> -->
-      <div>
-        <ff-d id=errormessage-Reddcond fakefile-bgcolor=#dbffeb ff-name="Errors and Successes"></ff-d>
+      <div data-for=timeURL>
+        <label>time url generator: <input type=datetime-local></label>
+        <output id=datetime-output></output>
       </div>
-    </section>
-    <section>
-      <h2>Wikipages</h2>
-      <ff-d isexpanded fakefile-bgcolor=#dbffeb ff-name=/ id=wikipageList></ul>
-    </section>
+      <div data-for=imageUpload style="border: 2px solid gray; padding: 2px">
+        <label for=imageUpload>image uploader: </label>
+        <div><input type=file id=imageUpload type=image/png,image/jpeg></div>
+        <label for=imageUpload-output>link: &lt;<output id=imageUpload-output></output>&gt;</label>
+        <div><button type=button id=createLinkforImage>create Link</button></div>
+      </div>
+  </div>
+  </section>
+  <section>
+    <h2>Publish</h2>
+    <label>wikipage-To: <input id=note-title placeholder=wikipage type=text></label>
+    <button id=subkit>overwrite</button>
+    <!-- <div id=errormessage-Favicond></div> -->
+    <div>
+      <ff-d id=errormessage-Reddcond fakefile-bgcolor=#dbffeb ff-name="Errors and Successes"></ff-d>
+    </div>
+  </section>
+  <section>
+    <h2>Wikipages</h2>
+    <ff-d isexpanded fakefile-bgcolor=#dbffeb ff-name=/ id=wikipageList></ul>
+  </section>
   </div>
   <script type="module" src="game/game.ts" defer></script>
   <div style=height:32vh></div>
