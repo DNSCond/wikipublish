@@ -1,32 +1,42 @@
 import { showToast } from "@devvit/web/client";
 import { chunkArray, enumerate } from "./helpers";
-import { CustomError } from "anthelpers";
+import { FakeFileFile } from "./FakeFile";
+import { addAggregateErrorMessage, addErrorMessage, initializeErrorMessage } from "./wikipage/error.message";
 
+let uploadable = true;
 const imageHandler = document.getElementById('imageUpload')! as HTMLInputElement,
   imageUploadOutput = document.getElementById('imageUpload-output')! as HTMLOutputElement;
 document.getElementById("createLinkforImage")!.addEventListener('click', async function () {
-  const file = imageHandler.files?.[0];
+  if (!uploadable) { showToast('please wait'); return; }
+  uploadable = false; const file = imageHandler.files?.[0];
   if (file) {
     const tokenId = Date.now(), dataUrl = await blobject.btoa(file), promise =
       Array.from(enumerate(chunkArray(Array.from(dataUrl), 100_000)), ({ element }) => element.join('')).map((element, index) =>
         fetch(`/api/createPartialURL?cache-buster=${index}-${tokenId}`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ element, tokenId }),
+          method: 'POST', headers: { 'Content-Type': 'application/json', },
+          body: JSON.stringify({ element, tokenId, index }),
         })
       );
-    await Promise.all(promise).then(resolved =>
-      resolved.forEach(resp => {
-        if (!resp.ok) {
-          throw new CustomError('Response Isnt Ok when Data URL', resp);
+    await Promise.all(promise).then(resolved => {
+      const errors: FakeFileFile[] = [],
+        promiseArray = resolved.map((resp, index) =>
+          resp.json().then(jsonic => {
+            if (!resp.ok) {
+              errors.push(initializeErrorMessage(false, jsonic.message, 'partialImageError ' + index));
+              return false;
+            } else return true;
+          }, (error: any) => {
+            errors.push(initializeErrorMessage(false, error.message, 'partialImageError ' + index));
+            return false;
+          }));
+      return Promise.all(promiseArray).then(allOk => {
+        if (!allOk) {
+          addAggregateErrorMessage('partialImageError', errors);
+          throw allOk;
         }
-      })
-    ).catch(catched => {
-      showToast(catched.message);
-      throw catched;
+      });
     });
+
     const response = await fetch('/api/createImageURL', {
       method: 'POST',
       headers: {
@@ -37,12 +47,15 @@ document.getElementById("createLinkforImage")!.addEventListener('click', async f
     if (response.ok) {
       imageUploadOutput.textContent = json.mediaUrl;
       showToast({ text: json.message, appearance: 'success' });
+      addErrorMessage(true, json.message, 'successFully created the image');
     } else {
       imageUploadOutput.textContent = 'Error';
       showToast(json.message);
+      addErrorMessage(false, json.message, 'failed to create the image');
       console.error(json.message);
     }
   }
+  uploadable = true;
 });
 
 const blobject = {

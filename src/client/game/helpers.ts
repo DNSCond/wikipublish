@@ -34,3 +34,15 @@ export function* enumerate<T>(array: T[]): Generator<{ element: T; index: number
     yield { index, element: array[index] as T, inArray: index in array };
   }
 }
+
+export function onButtonClick(button: HTMLButtonElement, callback: (this: HTMLButtonElement, ev: PointerEvent | KeyboardEvent, which: 'keydown' | 'click') => any, once: boolean = false): AbortController {
+  const abortController = new AbortController, { signal } = abortController;
+  button.addEventListener('click', new Proxy(callback, {
+    apply(target, thisArg, argumentsList) {
+      return Reflect.apply(target, thisArg, [...argumentsList, 'click']);
+    },
+  }) as (this: HTMLButtonElement, ev: PointerEvent) => any, { signal, once });
+
+  return abortController;
+}
+

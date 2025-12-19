@@ -47,9 +47,14 @@ app.post('/api/createImageURL', async (req, res) => {
     const key = `${userId}-expressKey-${token}`, array = await redis.hGetAll(key);
     // @ts-expect-error
     array.length = getArrayLengthFromOrdinaryObject(array);
-    const urlArr = Array.prototype.join.call(array);
-    if (urlArr.match(/,,/)) throw new ValiDationError('URL contains empty spots', { urlArr });
-    const url = urlArr.replaceAll(/,/g, ''), { mediaUrl } = (await media.upload({ url, type: 'image' }));
+    const url = Array.prototype.join.call(array, '');
+    if (Array.prototype.some.call(array, str => typeof str !== 'string'))
+      throw new ValiDationError('URL contains empty spots', { array, url });
+    const { mediaUrl } = (await media.upload({ url, type: 'image' }));
+
+    // Content Deletion Policy does probably not apply as i dont think these can be deleted.
+    await redis.hSet('mediaKey', { [`${userId}:mediaURL=${mediaUrl}`]: mediaUrl });
+
     res.status(200).json({ mediaUrl, message: "Success!" });
   } catch (err) {
     const message = String(err);
@@ -59,12 +64,12 @@ app.post('/api/createImageURL', async (req, res) => {
 
 app.post('/api/createPartialURL', async (req, res) => {
   try {
-    const { element, tokenId } = req.body, { userId } = context, token = tokenId;
+    const { element, tokenId, index } = req.body, { userId } = context, token = tokenId;
     if (!userId) throw new UserNotLoggedInError('the user is not logged in');
     if (!Number.isSafeInteger(token)) throw new RangeError('Invalid Token Id');
-    const key = `${userId}-expressKey-${token}`, length =
-      getArrayLengthFromOrdinaryObject(await redis.hGetAll(key));
-    await redis.hSet(key, { [length]: element, });
+    if (!Number.isSafeInteger(index) && !(index >= 0 && index < 50)) throw new RangeError('Invalid index Id');
+    const key = `${userId}-expressKey-${token}`;
+    await redis.hSet(key, { [index]: element, });
     await redis.expire(key, 10);
     res.status(200).json({ mediaUrl: null, message: null });
   } catch (err) {
@@ -149,13 +154,15 @@ app.post('/api/wikipost', async (req, res) => {
     if (typeof wikipageName !== 'string') throw new TypeError('wikipageName msut be a string');
     if (wikipageName.startsWith('config/') && wikipageName !== 'config/automoderator') throw new TypeError('(config/) pages cant be edited');
     const content = text + '\n\n---\n\n' + (wikipageName === 'config/automoderator' ? '# ' : '') + reason, page = wikipageName;
-    await reddit.updateWikiPage({ content, subredditName, page, reason, });
-
-    res.status(200).json({
-      status: "success",
-      message: 'successfully published',
-      text, wikipageName,
-    });
+    const wikipage = await reddit.updateWikiPage({ content, subredditName, page, reason, });
+    {
+      const wikipageName = wikipage.name;
+      res.status(200).json({
+        status: "success",
+        message: 'successfully published',
+        text, wikipageName,
+      });
+    }
   } catch (error) {
     res.status(400).json({
       status: "error",

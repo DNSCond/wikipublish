@@ -45,3 +45,7 @@ now shows contentHTML instad of content, that is, now wikipages are formatted, y
 ### 0.0.6
 
 made the file structure look like the wiki structure.
+
+## open source
+
+[you can find the sourcecode at https://github.com/DNSCond/wikipublish/](https://github.com/DNSCond/wikipublish/)
