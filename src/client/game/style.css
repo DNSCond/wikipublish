@@ -1,4 +1,7 @@
-html {
+html,
+textarea,
+input,
+button {
   font-family: monospace;
   background-color: white;
 }
@@ -29,4 +32,31 @@ pre {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   word-break: keep-all;
+}
+
+/* https://ant.ractoc.com/dollmaker2/ddDL-table.css */
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  width: fit-content;
+}
+
+th,
+td {
+  border: 3px solid #7c7c7c;
+  text-align: left;
+  padding: 8px;
+  box-sizing: border-box;
+  height: 100%;
+}
+
+td[colspan]>button[type=submit] {
+  width: 100%;
+}
+
+td:nth-child(3)>span {
+  background-color: white;
+  padding: 0.3em;
+  color: black;
 }

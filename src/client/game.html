@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang=en>
 
 <head>
-  <link rel="stylesheet" type="text/css" href="game/style.css" />
   <meta charset="UTF-8" />
+  <link rel="stylesheet" type="text/css" href="game/style.css" />
   <meta name="viewport"
     content="initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, width=device-width, height=device-height, user-scalable=0" />
   <title>Devvit Experimental</title>
@@ -29,22 +29,85 @@
       </div>-->
   </div>
   </section>
+  </section>
+  <h2>Diff and Revisions</h2>
+  <button id=Revision type=button>Load Revision History</button>
+  <div style=overflow:scroll id=Revisions></div>
+  <details>
+    <summary>Revision Content</summary>
+    <div style='border: 3px solid #7c7c7c;padding: 8px;' id=templateVision></div>
+  </details>
+
+  <template id=template>
+    <style class=template-style>
+      a:visited,
+      a:link {
+        color: blue;
+      }
+
+      a:hover {
+        color: orangered;
+      }
+
+      a:active {
+        color: black;
+      }
+
+      :host {
+        font-family: sans-serif
+      }
+
+      pre {
+        margin: 1em 0 0;
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+        word-break: keep-all;
+      }
+
+      ul {
+        padding-left: 2ch;
+      }
+
+      div.tablediv {
+        overflow: scroll;
+      }
+    </style>
+    <style class="template-style reddit table">
+      table {
+        border-collapse: collapse;
+        background-color: white;
+        min-width: 100%;
+      }
+
+      td,
+      th {
+        border: 1px solid #dddddd;
+        text-align: left;
+        padding: 8px;
+      }
+
+      tr:nth-child(even) {
+        background-color: #dddddd;
+      }
+    </style>
+  </template>
   <section>
-    <h2>Publish</h2>
-    <label>wikipage-To: <input id=note-title placeholder=wikipage type=text></label>
-    <button id=subkit>overwrite</button>
-    <!-- <div id=errormessage-Favicond></div> -->
-    <div>
-      <ff-d id=errormessage-Reddcond fakefile-bgcolor=#dbffeb ff-name="Errors and Successes"></ff-d>
+    <section>
+      <h2>Publish</h2>
+      <label>wikipage-To: <input id=note-title placeholder=wikipage type=text></label>
+      <button id=subkit>overwrite</button>
+      <!-- <div id=errormessage-Favicond></div> -->
+      <div>
+        <ff-d id=errormessage-Reddcond fakefile-bgcolor=#dbffeb ff-name="Errors and Successes"></ff-d>
+      </div>
+    </section>
+    <section>
+      <h2>Wikipages</h2>
+      <ff-d isexpanded fakefile-bgcolor=#dbffeb ff-name=/ id=wikipageList></ul>
+    </section>
     </div>
-  </section>
-  <section>
-    <h2>Wikipages</h2>
-    <ff-d isexpanded fakefile-bgcolor=#dbffeb ff-name=/ id=wikipageList></ul>
-  </section>
-  </div>
-  <script type="module" src="game/game.ts" defer></script>
-  <div style=height:32vh></div>
+    <script type="module" src="game/game.ts" defer></script>
+    <div style=height:32vh></div>
 </body>
 
 </html>

@@ -11,6 +11,7 @@ import { createPost } from "./post";
 // import { } from "anthelpers";
 import { htmlencode } from "./htmlencode";
 import { CustomError } from "anthelpers";
+import { revisionRouter } from "./wikipageRevisionData";
 
 const app = express();
 
@@ -110,7 +111,9 @@ router.get("/api/wikipageContent", async (req, res): Promise<void> => {
     await isModerayor();
     const wikipageName = req.query.wikipageName as string | undefined;
     if (!wikipageName) throw new RangeError('wikipageName is undefined');
-    let { content, revisionDate, revisionAuthor, revisionReason, contentHtml } = (await reddit.getWikiPage(context.subredditName, wikipageName));
+    const revisionId = req.query.revisionId as string | undefined;
+    let { content, revisionDate, revisionAuthor, revisionReason, contentHtml } = // @ts-expect-error
+      (await reddit.getWikiPage(context.subredditName, wikipageName, revisionId));
     content = wikipageName === 'config/automoderator' ? content : content.replace(/\s*(?:---\s*)?revision by.+$/i, '');
     const revisionAuthorname = revisionAuthor?.username || '[undefined]';
     const contentHTML = wikipageName === 'config/automoderator' ? `<pre class=Favicond_antboiy-addition>${htmlencode(content)}</pre>` : contentHtml;
@@ -123,7 +126,8 @@ router.get("/api/wikipageContent", async (req, res): Promise<void> => {
     });
   }
 });
-async function isModerayor() {
+
+export async function isModerayor() {
   const user = await reddit.getCurrentUser();
   if (!user) throw new TypeError('CurrentUser is undefined');
   const username = user.username;
@@ -149,12 +153,12 @@ app.post('/api/wikipost', async (req, res) => {
   const { text, wikipageName } = JSON.parse(req.body), { subredditName } = context;
   try {
     const { username } = await isModerayor();
-    const reason = `revision by u/${username} (${Date()})`;
+    const reason = `revision by u/${username} (${Date().slice(0, 33)})`;
 
     if (typeof wikipageName !== 'string') throw new TypeError('wikipageName msut be a string');
     if (wikipageName.startsWith('config/') && wikipageName !== 'config/automoderator') throw new TypeError('(config/) pages cant be edited');
     const content = text + '\n\n---\n\n' + (wikipageName === 'config/automoderator' ? '# ' : '') + reason, page = wikipageName;
-    const wikipage = await reddit.updateWikiPage({ content, subredditName, page, reason, });
+    const wikipage = await reddit.updateWikiPage({ content, subredditName, page, reason });
     {
       const wikipageName = wikipage.name;
       res.status(200).json({
@@ -177,14 +181,15 @@ router.post("/internal/menu/create-post", async (_req, res) => {
   //const { subredditName } = req.body; // Ensure you get the subreddit name from the request context
   //if (!subredditName) {res.status(400).json({ showToast: 'Subreddit name missing.' });return;}
   const navigateTo = await createPost('Please Ignore, The moderators need to edit the wiki');
-  await navigateTo.addComment({
-    text: 'please ignore this post. it was created due to a nessary workarounddue ' +
-      'to devvit\'s limitations. if i can find a way to not make posts then ill do it'
-  });
+  // await navigateTo.addComment({
+  // text: 'please ignore this post. it was created due to a nessary workarounddue ' +
+  // 'to devvit\'s limitations. if i can find a way to not make posts then ill do it'
+  // });
   res.json({ navigateTo });
 });
 
 app.use(router);
+app.use(revisionRouter);
 const server = createServer(app);
 server.on("error", (err) => console.error(`server error; ${err.stack}`));
 server.listen(getServerPort());
