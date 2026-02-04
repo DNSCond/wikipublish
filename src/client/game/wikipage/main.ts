@@ -10,6 +10,9 @@ import { getWikipageData } from "./fetcher";
 import { onButtonClick } from "../helpers";
 import { addErrorMessage } from "./error.message";
 import { noteBody, noteTitle } from "../game";
+import { createLink } from "../createTag";
+import { RuleJsonSchema } from "./PersonalPreventRuleset";
+import { jsonToHTML } from "./jsonToHTML";
 
 const wikipageListAbort: AbortController[] = [];
 
@@ -84,9 +87,21 @@ export async function initializeWikipage(ff: HTMLElement): Promise<void> {
         file.append(details);
         details.style.borderTop = 'none';
       } catch { }
-      file.append(html);
-
-      {
+      if (wikipageName === 'favicond/personalprevent') {
+        // let jsonContent;
+        // try {
+        //   jsonContent = JSON.parse(content);
+        // } catch { jsonContent = { rules: new Array }; }
+        // const innerText = jsonEncode(RuleJsonSchema, 2),
+        //   pre = Object.assign(document.createElement('pre'), { innerText }),
+        //   details = createDetailsElementWith(
+        //     'Personal Prevent Ruleset', {},
+        //     createLink('https://developers.reddit.com/apps/personalprevent',
+        //       'install from devvit').tag, pre,
+        //   ); file.append(details);
+        // pre.replaceWith(jsonToHTML(jsonContent));
+        // details.style.borderTop = 'none';
+      } file.append(html); {
         const { signal } = myAborter;
         Array.from(html.shadowRoot!.querySelectorAll('a'), m => m as HTMLAnchorElement).forEach(a => {
           a.addEventListener('click', function (event) {

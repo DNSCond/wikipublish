@@ -1,6 +1,6 @@
 // details
 
-export function createDetailsElementWith(summery: string, options: undefined |
+export function createDetailsElementWith(summery: string, options?: undefined |
 { setOpen?: boolean, className?: string, classArray?: string[] }, ...rest: (HTMLElement | string | Node)[]): HTMLDetailsElement {
     const details = document.createElement('details');
     const summary = document.createElement('summary');
