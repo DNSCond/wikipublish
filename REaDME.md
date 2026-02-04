@@ -11,6 +11,18 @@ see [https://github.com/DNSCond/wikipublish/blob/main/WhatAreTimeURLs.md#time-ur
 
 ## changelog
 
+### 0.1.0: RevisionId
+
+- Wikipage Revisions can now be seen.
+- to load a revision enter the wikipageName in the overwrite field (wikipage-To) and
+  click "`Load Revision History`". it should show a table.
+- in the revision table it will list
+  - "`Revision Reason`"
+  - "`Revisioned At`"
+  - "`Revisioner`" (the user who made the Revision)
+  - "`Options`" (the buttons you can use)
+- diffing comming soon?
+
 ### 0.0.14: a link
 
 i forgot
